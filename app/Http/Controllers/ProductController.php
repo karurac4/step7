@@ -6,6 +6,7 @@ use App\Models\Product;
 use App\Models\Company;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 
 class ProductController extends Controller
 {
@@ -68,26 +69,36 @@ class ProductController extends Controller
             'img_path' => 'image|mimes:jpeg,png,jpg,gif|max:2048',
         ]);
     
+        try{
+                DB::beginTransaction();
+
+            $data = [
+                'product_name' => $request->product_name,
+                'company_id' => $request->company_name,
+                'price' => $request->price,
+                'stock' => $request->stock,
+                'comment' => $request->comment,
+            ];
         
-        $data = [
-            'product_name' => $request->product_name,
-            'company_id' => $request->company_name,
-            'price' => $request->price,
-            'stock' => $request->stock,
-            'comment' => $request->comment,
-        ];
-    
+
+            if ($request->hasFile('img_path')) {
+                $image = $request->file('img_path');
+                $imageName = time() . '.' . $image->getClientOriginalExtension();
+                $image->move(public_path('images'), $imageName);
+                $data['img_path'] = $imageName;
+            }
         
-        if ($request->hasFile('img_path')) {
-            $image = $request->file('img_path');
-            $imageName = time() . '.' . $image->getClientOriginalExtension();
-            $image->move(public_path('images'), $imageName);
-            $data['img_path'] = $imageName;
+
+            $result = Product::create($data);
+        
+            DB::commit();
+        } catch (\Exception $e) {
+            DB::rollBack();
+
+            throw $e;
         }
-    
-        $result = Product::create($data);
-    
-        // 投稿後の処理
+
+    // 投稿後の処理
         if ($result) {
             session()->flash('flash_message', '登録完了');
         } else {
@@ -145,24 +156,37 @@ class ProductController extends Controller
         'img_path' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
     ]);
 
-    $product = Product::findOrFail($id);
+    DB::beginTransaction();
 
-    $product->update([
-        'product_name' => $request->input('product_name'),
-        'company_id' => $request->input('company_id'),
-        'price' => $request->input('price'),
-        'stock' => $request->input('stock'),
-        'comment' => $request->input('comment'),
-    ]);
+    try{
 
-    if ($request->hasFile('img_path')) {
-        // 画像がアップロードされた場合の処理
-        $imagePath = $request->file('img_path')->store('products', 'public');
-        $product->img_path = $imagePath;
-        $product->save();
+        $product = Product::findOrFail($id);
+
+        $product->update([
+            'product_name' => $request->input('product_name'),
+            'company_id' => $request->input('company_id'),
+            'price' => $request->input('price'),
+            'stock' => $request->input('stock'),
+            'comment' => $request->input('comment'),
+        ]);
+
+        if ($request->hasFile('img_path')) {
+            // 画像がアップロードされた場合の処理
+            $imagePath = $request->file('img_path')->store('products', 'public');
+            $product->img_path = $imagePath;
+            $product->save();
+        }
+
+        DB::commit();
+            
+        return redirect()->route('products.index')->with('success', '商品が更新されました');
+
+    } catch (\Exception $e) {
+        
+        DB::rollBack();
+        throw $e;
     }
 
-    return redirect()->route('products.index')->with('success', '商品が更新されました');
 }
 
     /**
@@ -174,9 +198,22 @@ class ProductController extends Controller
     public function destroy($id)
     {
         //
-        $products = Product::findOrFail($id);
-        $products->delete();
+        DB::beginTransaction();
 
-        return redirect()->route('products.index')->with('success', '商品が削除されました');
+        try {
+    
+            $products = Product::findOrFail($id);
+            $products->delete();
+
+            DB::commit();
+
+            return redirect()->route('products.index')->with('success', '商品が削除されました');
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+    
+            throw $e;
+        }
+
     }
 }

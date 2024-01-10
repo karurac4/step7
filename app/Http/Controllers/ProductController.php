@@ -16,26 +16,51 @@ class ProductController extends Controller
      * @return \Illuminate\Http\Response
      */
     public function index(Request $request)
-    {
-        $companies = Company::all();
-        $query = Product::with('companies');
+{
+    $companies = Company::all();
+    $query = Product::with('companies');
     
-        $companyFilter = $request->input('company_filter');
-        $keyword = $request->input('keyword');
+    $companyFilter = $request->input('company_filter');
+    $keyword = $request->input('keyword');
     
-        if ($companyFilter) {
-            $query->where('company_id', $companyFilter);
-        }
-    
-        if ($keyword) {
-            $query->where('product_name', 'like', '%' . $keyword . '%');
-        }
-    
-        $products = $query->paginate(5);
-    
-        return view('product.index', compact('companies', 'products'));
+    if ($companyFilter) {
+        $query->where('company_id', $companyFilter);
     }
     
+    if ($keyword) {
+        $query->where('product_name', 'like', '%' . $keyword . '%');
+    }
+
+ // 価格の検索条件
+ $minPrice = $request->input('min_price');
+ $maxPrice = $request->input('max_price');
+ if ($minPrice !== null) {
+     $query->where('price', '>=', $minPrice);
+ }
+ if ($maxPrice !== null) {
+     $query->where('price', '<=', $maxPrice);
+ }
+
+ // 在庫数の検索条件
+ $minStock = $request->input('min_stock');
+ $maxStock = $request->input('max_stock');
+ if ($minStock !== null) {
+     $query->where('stock', '>=', $minStock);
+ }
+ if ($maxStock !== null) {
+     $query->where('stock', '<=', $maxStock);
+ }
+
+
+    
+    $products = $query->paginate(5);
+
+    if ($request->ajax()) {
+        return view('product.search-results', compact('products'));
+    }
+
+    return view('product.index', compact('companies', 'products'));
+}
     /**
      * Show the form for creating a new resource.
      *
@@ -197,23 +222,20 @@ class ProductController extends Controller
      */
     public function destroy($id)
     {
-        //
         DB::beginTransaction();
-
-        try {
     
-            $products = Product::findOrFail($id);
-            $products->delete();
-
+        try {
+            $product = Product::findOrFail($id);
+            $product->delete();
+    
             DB::commit();
-
+    
             return redirect()->route('products.index')->with('success', '商品が削除されました');
-
         } catch (\Exception $e) {
             DB::rollBack();
     
-            throw $e;
+            Log::error('商品削除エラー: ' . $e->getMessage());
+            return redirect()->route('products.index')->with('error', '商品の削除中にエラーが発生しました');
         }
-
     }
 }

@@ -33,6 +33,4 @@ Route::put('/products/{id}', [ProductController::class, 'update'])->name('produc
 Route::delete('/products/{id}', [ProductController::class, 'destroy'])->name('products.destroy');
 Route::get('/products/{id}', [ProductController::class, 'show'])->name('products.show');
 
-
-
 Route::post('/post', [ProductController::class, 'store'])->name('store');

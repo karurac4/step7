@@ -7,6 +7,8 @@ use App\Models\Company;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Database\QueryException; 
 
 class ProductController extends Controller
 {
@@ -60,6 +62,8 @@ class ProductController extends Controller
     }
 
     return view('product.index', compact('companies', 'products'));
+   
+
 }
     /**
      * Show the form for creating a new resource.
@@ -222,20 +226,24 @@ class ProductController extends Controller
      */
     public function destroy($id)
     {
-        DB::beginTransaction();
-    
         try {
-            $product = Product::findOrFail($id);
+            DB::beginTransaction();
+    
+            $product = Product::find($id);
+    
+            if (!$product) {
+                return response()->json(['success' => false, 'error' => '商品が見つかりません。']);
+            }
+    
             $product->delete();
     
             DB::commit();
     
-            return redirect()->route('products.index')->with('success', '商品が削除されました');
+            return response()->json(['success' => true]);
         } catch (\Exception $e) {
             DB::rollBack();
     
-            Log::error('商品削除エラー: ' . $e->getMessage());
-            return redirect()->route('products.index')->with('error', '商品の削除中にエラーが発生しました');
+            return response()->json(['success' => false, 'error' => '削除に失敗しました。']);
         }
     }
 }

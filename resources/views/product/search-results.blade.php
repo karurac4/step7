@@ -31,7 +31,7 @@
                     <form action="{{ route('products.destroy', $product->id) }}" method="POST" style="display: inline;">
                         @csrf
                         @method('DELETE')
-                        <button type="submit" class="btn btn-danger">削除</button>
+                        <button type="submit" class="btn btn-danger" data-product-id="{{ $product->id }}">削除</button>
                     </form>
                 </td>
             </tr>
@@ -42,37 +42,76 @@
     {{ $products->links() }}
 </div>
 
-
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery.tablesorter/2.31.3/js/jquery.tablesorter.min.js"></script>
 
 <script>
-    $(document).ready(function () {
-        $(".tablesorter").tablesorter();
-    });
+$(document).ready(function () {
+    $('.btn-danger').on('click', function (e) {
+        e.preventDefault();
 
-     $('.btn-delete').on('click', function (e) {
-                e.preventDefault();
+        var productId = $(this).data('product-id');
+        console.log('Product ID:', productId);
 
-                var productId = $(this).data('product-id');
+        if (confirm('本当に削除しますか？')) {
+            $.ajax({
+                type: 'POST',
+                url: `/products/${productId}`,
+                data: {
+                    _token: $('meta[name="csrf-token"]').attr('content'),
+                    _method: 'DELETE'
+                    },
+                headers: {
+                    'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+                    },
+                success: function (data) {
+                    console.log('Ajax request succeeded:', data);
 
-                if (confirm('本当に削除しますか？')) {
-                    $.ajax({
-                        type: 'DELETE',
-                        url: `/products/${productId}`,
-                        success: function (data) {
-                            if (data.success) {
-                                $(`#productRow${productId}`).hide();
-                                alert('商品を削除しました');
-                            } else {
-                                alert('削除できませんでした');
-                            }
-                        },
-                        error: function () {
-                            alert('削除できませんでした');
-                        }
-                    });
+                    if (data.success) {
+                        $(`#productRow${productId}`).hide();
+                        alert('商品を削除しました');
+
+                        // ページの再読み込み
+                        location.reload();
+                    } else {
+                        alert('削除できませんでした');
+                    }
+                },
+                error: function () {
+                    console.error('Ajax request failed');
+                    alert('削除できませんでした');
                 }
             });
-        
+        }
+    });
 
+    $(".tablesorter").tablesorter();
+});
 </script>
+
+    
+
+    
+    
+    <script>
+  $(document).ready(function() {
+    $('#searchButton').on('click', function() {
+        $('tbody').empty();
+        $('.pagination').empty();
+
+        $.ajax({
+            url: "{{ route('products.index') }}",
+            type: "GET",
+            data: $('#searchForm').serialize(),
+            success: function(data) {
+                $('table:not(#searchResults table)').hide();
+                $('#searchResults').html(data);
+            },
+            error: function(error) {
+                console.error('Ajax request failed', error);
+            }
+        });
+    });
+});
+
+
+    </script>

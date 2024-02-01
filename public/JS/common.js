@@ -1,5 +1,34 @@
 
 $(document).ready(function () {
+    initializeTable();
+    initializeDeleteEvent();
+
+    $('#searchButton').on('click', function() {
+        $('tbody').empty();
+        $('.pagination').empty();
+
+        $.ajax({
+            url: productsIndexUrl,
+            type: "GET",
+            data: $('#searchForm').serialize(),
+            success: function(data) {
+                $('table:not(#searchResults table)').hide();
+                $('#searchResults').html(data);
+                initializeTable();
+                initializeDeleteEvent();
+               },
+            error: function(error) {
+                console.error('Ajax request failed', error);
+            }
+        });
+    });
+
+
+    function initializeTable() {
+        $(".tablesorter").tablesorter();
+    }
+
+    function initializeDeleteEvent(){
     $('.btn-danger').on('click', function (e) {
         e.preventDefault();
 
@@ -37,32 +66,13 @@ $(document).ready(function () {
             });
         }
     });
+    };
 
-    $(".tablesorter").tablesorter();
 });
 
     
 
     
     
-  $(document).ready(function() {
-    $('#searchButton').on('click', function() {
-        $('tbody').empty();
-        $('.pagination').empty();
-
-        $.ajax({
-            url: productsIndexUrl,
-            type: "GET",
-            data: $('#searchForm').serialize(),
-            success: function(data) {
-                $('table:not(#searchResults table)').hide();
-                $('#searchResults').html(data);
-            },
-            error: function(error) {
-                console.error('Ajax request failed', error);
-            }
-        });
-    });
-});
 
 

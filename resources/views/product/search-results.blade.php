@@ -42,8 +42,8 @@
     {{ $products->links() }}
 </div>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery.tablesorter/2.31.3/js/jquery.tablesorter.min.js"></script>
+<!-- <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery.tablesorter/2.31.3/js/jquery.tablesorter.min.js"></script>
 <script>
     const productsIndexUrl = "{{ route('products.index') }}";
 </script>
-<script src="{{ asset('js/common.js') }}"></script>
+<script src="{{ asset('js/common.js') }}"></script> -->
